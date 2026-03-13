@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { 
   Terminal, 
   Plus, 
@@ -13,69 +14,65 @@ import {
   Clock, 
   Settings,
   MoreHorizontal,
-  Cloud,
-  User,
-  LogOut
+  Cloud
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import ConnectionTest from "@/components/ConnectionTest";
-
-// Mock data for projects/servers
-const mockProjects = [
-  {
-    id: 1,
-    name: "production-server",
-    description: "Main production environment",
-    status: "connected",
-    lastAccessed: "2 minutes ago",
-    type: "Ubuntu 22.04",
-    location: "us-east-1"
-  },
-  {
-    id: 2,
-    name: "staging-server", 
-    description: "Staging environment for testing",
-    status: "disconnected",
-    lastAccessed: "1 hour ago",
-    type: "CentOS 8",
-    location: "us-west-2"
-  },
-  {
-    id: 3,
-    name: "development-server",
-    description: "Development and testing server",
-    status: "connected",
-    lastAccessed: "5 minutes ago", 
-    type: "Ubuntu 20.04",
-    location: "eu-west-1"
-  },
-  {
-    id: 4,
-    name: "database-server",
-    description: "PostgreSQL database server",
-    status: "maintenance",
-    lastAccessed: "30 minutes ago",
-    type: "RHEL 9",
-    location: "us-east-1"
-  }
-];
+import { AuthLayout } from "@/components/AuthLayout";
+import { api } from "@/services/api";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
+  const { getToken } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [userProjects, setUserProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredProjects = mockProjects.filter(project =>
+  useEffect(() => {
+    const syncUser = async () => {
+      if (user) {
+        try {
+          const token = await getToken();
+          // Sync user with backend
+          await api.post('/auth/sync-user', { clerkId: user.id }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          // Fetch user projects
+          const response = await api.get('/user/projects', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUserProjects(response.data.projects || []);
+        } catch (error) {
+          console.error('Failed to sync user:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    syncUser();
+  }, [user, getToken]);
+
+  // Use real projects if available, otherwise show empty state
+  const projectsToDisplay = userProjects.length > 0 ? userProjects : [];
+  
+  const filteredProjects = projectsToDisplay.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (project.repositoryUrl && project.repositoryUrl.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "connected":
+      case "deployed":
         return "bg-green-500";
-      case "disconnected":
+      case "deploying":
+        return "bg-blue-500";
+      case "failed":
+        return "bg-red-500";
+      case "stopped":
         return "bg-gray-500";
-      case "maintenance":
+      case "pending":
         return "bg-yellow-500";
       default:
         return "bg-gray-500";
@@ -84,64 +81,45 @@ const Dashboard = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "connected":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Connected</Badge>;
-      case "disconnected":
-        return <Badge variant="secondary">Disconnected</Badge>;
-      case "maintenance":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Maintenance</Badge>;
+      case "deployed":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Deployed</Badge>;
+      case "deploying":
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Deploying</Badge>;
+      case "failed":
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Failed</Badge>;
+      case "stopped":
+        return <Badge variant="secondary">Stopped</Badge>;
+      case "pending":
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
       default:
         return <Badge variant="secondary">Unknown</Badge>;
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Cloud className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold">CloudTerminal</h1>
-            </div>
-            <nav className="hidden md:flex items-center space-x-6 ml-8">
-              <Button variant="ghost" className="text-primary">Overview</Button>
-              <Button variant="ghost">Projects</Button>
-              <Button variant="ghost">Deployments</Button>
-              <Button variant="ghost">Analytics</Button>
-            </nav>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
-                  <User className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/")}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Back to Home
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
+    <AuthLayout>
 
       <div className="flex">
         {/* Sidebar */}
@@ -228,19 +206,19 @@ const Dashboard = () => {
                 <Server className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">4</div>
-                <p className="text-xs text-muted-foreground">2 active connections</p>
+                <div className="text-2xl font-bold">{userProjects.length}</div>
+                <p className="text-xs text-muted-foreground">{userProjects.filter(p => p.status === 'deployed').length} deployed</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+                <CardTitle className="text-sm font-medium">Active Deployments</CardTitle>
                 <Terminal className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2</div>
-                <p className="text-xs text-muted-foreground">+1 from last hour</p>
+                <div className="text-2xl font-bold">{userProjects.filter(p => p.status === 'deploying').length}</div>
+                <p className="text-xs text-muted-foreground">Currently deploying</p>
               </CardContent>
             </Card>
 
@@ -275,78 +253,105 @@ const Dashboard = () => {
 
           {/* Projects Grid */}
           <div>
-            <h2 className="text-xl font-semibold mb-4">Your Servers</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map((project) => (
-                <Card key={project.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`} />
-                        <div>
-                          <CardTitle className="text-lg">{project.name}</CardTitle>
-                          <CardDescription>{project.description}</CardDescription>
+            <h2 className="text-xl font-semibold mb-4">Your Projects</h2>
+            
+            {filteredProjects.length === 0 ? (
+              <Card className="p-12 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <Server className="h-16 w-16 text-muted-foreground" />
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Deploy your first project to get started
+                    </p>
+                    <Button onClick={() => navigate("/create-project")}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Your First Project
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProjects.map((project: any) => (
+                  <Card key={project._id} className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`} />
+                          <div>
+                            <CardTitle className="text-lg">{project.name}</CardTitle>
+                            <CardDescription className="text-xs truncate max-w-[200px]">
+                              {project.subdomain}.aitoyz.in
+                            </CardDescription>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => window.open(`https://${project.subdomain}.aitoyz.in`, '_blank')}
+                              disabled={project.status !== 'deployed'}
+                            >
+                              <Cloud className="mr-2 h-4 w-4" />
+                              Visit Site
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Settings className="mr-2 h-4 w-4" />
+                              Settings
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Status</span>
+                          {getStatusBadge(project.status)}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Port</span>
+                          <span className="text-sm font-medium">{project.port}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Repository</span>
+                          <span className="text-sm font-medium truncate max-w-[150px]">
+                            {project.repositoryUrl.split('/').slice(-2).join('/')}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Deployed</span>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Clock className="mr-1 h-3 w-3" />
+                            {formatDate(project.createdAt)}
+                          </div>
                         </div>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate("/bash")}>
-                            <Terminal className="mr-2 h-4 w-4" />
-                            Connect
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Settings className="mr-2 h-4 w-4" />
-                            Settings
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Status</span>
-                        {getStatusBadge(project.status)}
+                      <div className="mt-4 pt-4 border-t">
+                        <Button 
+                          className="w-full" 
+                          variant={project.status === "deployed" ? "default" : "outline"}
+                          onClick={() => window.open(`https://${project.subdomain}.aitoyz.in`, '_blank')}
+                          disabled={project.status !== 'deployed'}
+                        >
+                          <Cloud className="mr-2 h-4 w-4" />
+                          {project.status === "deployed" ? "Visit Site" : "Deploying..."}
+                        </Button>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Type</span>
-                        <span className="text-sm font-medium">{project.type}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Location</span>
-                        <span className="text-sm font-medium">{project.location}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Last accessed</span>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Clock className="mr-1 h-3 w-3" />
-                          {project.lastAccessed}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t">
-                      <Button 
-                        className="w-full" 
-                        variant={project.status === "connected" ? "default" : "outline"}
-                        onClick={() => navigate("/bash")}
-                      >
-                        <Terminal className="mr-2 h-4 w-4" />
-                        {project.status === "connected" ? "Open Terminal" : "Connect"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </main>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

@@ -2,16 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Cloud } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import ProjectForm from "@/components/ProjectForm";
+import { AuthLayout } from "@/components/AuthLayout";
 
 interface DeploymentResult {
   status: string;
-  projectName: string;
-  url: string;
-  port: number;
-  subdomain: string;
-  sslEnabled: boolean;
+  projectName?: string;
+  url?: string;
+  port?: number;
+  subdomain?: string;
+  sslEnabled?: boolean;
 }
 
 const CreateProject = () => {
@@ -35,31 +36,18 @@ const CreateProject = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/dashboard")}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Cloud className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">CloudTerminal</h1>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="mb-8 text-center">
+    <AuthLayout>
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/dashboard")}
+            className="gap-2 mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
           <h1 className="text-4xl font-bold mb-2">Deploy New Project</h1>
           <p className="text-muted-foreground">
             Deploy your frontend application from a GitHub repository
@@ -207,8 +195,8 @@ const CreateProject = () => {
             </div>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AuthLayout>
   );
 };
 

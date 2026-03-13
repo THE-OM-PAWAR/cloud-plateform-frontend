@@ -1,12 +1,26 @@
 import axios from 'axios';
 
-// Use relative URLs since we're using Vite proxy
-const API_BASE_URL = '/api';
+// Use environment variable or fallback to relative URLs
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance with extended timeout for deployments
 const apiClient = axios.create({
+  baseURL: API_BASE_URL,
   timeout: 15 * 60 * 1000, // 15 minutes timeout for long-running deployments
 });
+
+// Add request interceptor to include auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    // Token will be added by the calling component using Clerk's getToken()
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export const api = apiClient;
 
 export interface DeploymentRequest {
   repoUrl: string;
@@ -38,8 +52,8 @@ export const deploymentApi = {
   /**
    * Deploy a new application
    */
-  deploy: async (data: DeploymentRequest): Promise<DeploymentResponse> => {
-    const response = await apiClient.post(`${API_BASE_URL}/deploy`, data);
+  deploy: async (data: DeploymentRequest, config?: any): Promise<DeploymentResponse> => {
+    const response = await apiClient.post(`${API_BASE_URL}/deploy`, data, config);
     return response.data;
   },
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ interface ProjectFormProps {
 }
 
 const ProjectForm = ({ onSuccess, onError }: ProjectFormProps) => {
+  const { getToken } = useAuth();
   const [siteName, setSiteName] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [isDeploying, setIsDeploying] = useState(false);
@@ -67,10 +69,21 @@ const ProjectForm = ({ onSuccess, onError }: ProjectFormProps) => {
       console.log("Site Name:", siteName);
       console.log("Repository URL:", repoUrl);
 
+      // Get authentication token
+      const token = await getToken();
+      
+      if (!token) {
+        throw new Error("Authentication required. Please sign in again.");
+      }
+
       // Make API request using the deployment service
       const result = await deploymentApi.deploy({
         repoUrl: repoUrl.trim(),
         siteName: siteName.trim()
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       console.log("✅ Deployment initiated:", result);
