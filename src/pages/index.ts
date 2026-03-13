@@ -5,3 +5,6 @@ export { default as NotFound } from './NotFound';
 export { default as CreateProject } from './CreateProject';
 export { default as SignInPage } from './SignInPage';
 export { default as SignUpPage } from './SignUpPage';
+export { default as AppsMarketplace } from './AppsMarketplace';
+export { default as AdminApps } from './AdminApps';
+export { default as MyDeployments } from './MyDeployments';

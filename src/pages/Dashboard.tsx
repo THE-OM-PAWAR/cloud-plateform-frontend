@@ -16,10 +16,12 @@ import {
   Server,
   TrendingUp,
   Zap,
-  MoreVertical
+  MoreVertical,
+  Package
 } from "lucide-react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { api } from "@/services/api";
+import { appsApi, type AppDeployment } from "@/services/appsApi";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,48 +34,67 @@ const Dashboard = () => {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [userProjects, setUserProjects] = useState([]);
+  const [userProjects, setUserProjects] = useState<any[]>([]);
+  const [appDeployments, setAppDeployments] = useState<AppDeployment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const syncUser = async () => {
+    const loadData = async () => {
       if (user) {
         try {
           const token = await getToken();
+          
+          // Sync user
           await api.post('/auth/sync-user', { clerkId: user.id }, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
-          const response = await api.get('/user/projects', {
+          // Fetch GitHub projects
+          const projectsResponse = await api.get('/user/projects', {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setUserProjects(response.data.projects || []);
+          setUserProjects(projectsResponse.data.projects || []);
+          
+          // Fetch App Marketplace deployments
+          if (token) {
+            const deploymentsResponse = await appsApi.getUserDeployments(token);
+            setAppDeployments(deploymentsResponse || []);
+          }
         } catch (error) {
-          console.error('Failed to sync user:', error);
+          console.error('Failed to load data:', error);
         } finally {
           setLoading(false);
         }
       }
     };
 
-    syncUser();
+    loadData();
   }, [user, getToken]);
 
-  const filteredProjects = userProjects.filter((project: any) =>
-    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (project.repositoryUrl && project.repositoryUrl.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Combine both types of deployments
+  const allDeployments = [
+    ...userProjects.map((p: any) => ({ ...p, type: 'github' })),
+    ...appDeployments.map((d: any) => ({ ...d, type: 'app', name: d.projectName }))
+  ];
+
+  const filteredDeployments = allDeployments.filter((item: any) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.repositoryUrl && item.repositoryUrl.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const stats = {
-    total: userProjects.length,
-    deployed: userProjects.filter((p: any) => p.status === 'deployed').length,
-    deploying: userProjects.filter((p: any) => p.status === 'deploying').length,
-    failed: userProjects.filter((p: any) => p.status === 'failed').length,
+    total: allDeployments.length,
+    deployed: allDeployments.filter((p: any) => 
+      p.status === 'deployed' || p.status === 'running'
+    ).length,
+    deploying: allDeployments.filter((p: any) => p.status === 'deploying').length,
+    failed: allDeployments.filter((p: any) => p.status === 'failed').length,
   };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string; className?: string }> = {
       deployed: { variant: "default", label: "Ready", className: "bg-green-500 hover:bg-green-600" },
+      running: { variant: "default", label: "Running", className: "bg-green-500 hover:bg-green-600" },
       deploying: { variant: "secondary", label: "Building" },
       failed: { variant: "destructive", label: "Error" },
       stopped: { variant: "outline", label: "Stopped" },
@@ -119,30 +140,36 @@ const Dashboard = () => {
               Overview of your deployments and activity
             </p>
           </div>
-          <Button onClick={() => navigate("/create-project")}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Project
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/apps")}>
+              <Package className="mr-2 h-4 w-4" />
+              Marketplace
+            </Button>
+            <Button onClick={() => navigate("/create-project")}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Deployments</CardTitle>
               <Server className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.deployed} deployed
+                {userProjects.length} GitHub + {appDeployments.length} Apps
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Deployments</CardTitle>
+              <CardTitle className="text-sm font-medium">Active</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -182,15 +209,15 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Projects Section */}
+        {/* Deployments Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight">Projects</h2>
-            {userProjects.length > 0 && (
+            <h2 className="text-2xl font-semibold tracking-tight">All Deployments</h2>
+            {allDeployments.length > 0 && (
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search projects..."
+                  placeholder="Search deployments..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -199,44 +226,59 @@ const Dashboard = () => {
             )}
           </div>
 
-          {/* Projects List */}
-          {filteredProjects.length === 0 && userProjects.length === 0 ? (
+          {/* Deployments List */}
+          {filteredDeployments.length === 0 && allDeployments.length === 0 ? (
             <Card className="p-12 text-center border-dashed">
               <div className="flex flex-col items-center gap-4">
                 <div className="rounded-full bg-muted p-4">
                   <GitBranch className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">No projects yet</h3>
+                  <h3 className="text-xl font-semibold">No deployments yet</h3>
                   <p className="text-muted-foreground max-w-sm">
-                    Get started by deploying your first project from a Git repository
+                    Deploy from GitHub or browse the App Marketplace
                   </p>
                 </div>
-                <Button onClick={() => navigate("/create-project")} className="mt-2">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Project
-                </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button onClick={() => navigate("/create-project")}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Deploy GitHub
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/apps")}>
+                    <Package className="mr-2 h-4 w-4" />
+                    Browse Apps
+                  </Button>
+                </div>
               </div>
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredProjects.map((project: any) => (
+              {filteredDeployments.map((deployment: any) => (
                 <Card 
-                  key={project._id} 
+                  key={deployment._id} 
                   className="hover:shadow-md transition-all cursor-pointer group"
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 flex-1">
                         <CardTitle className="text-base flex items-center gap-2">
-                          {project.name}
-                          {getStatusBadge(project.status)}
+                          {deployment.name}
+                          {getStatusBadge(deployment.status)}
                         </CardTitle>
                         <CardDescription className="text-xs flex items-center gap-1">
-                          <GitBranch className="h-3 w-3" />
-                          <span className="truncate">
-                            {project.repositoryUrl.replace('https://github.com/', '')}
-                          </span>
+                          {deployment.type === 'github' ? (
+                            <>
+                              <GitBranch className="h-3 w-3" />
+                              <span className="truncate">
+                                {deployment.repositoryUrl.replace('https://github.com/', '')}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Package className="h-3 w-3" />
+                              <span className="truncate">App Marketplace</span>
+                            </>
+                          )}
                         </CardDescription>
                       </div>
                       <DropdownMenu>
@@ -247,28 +289,40 @@ const Dashboard = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => project.status === 'deployed' && window.open(`https://${project.subdomain}.aitoyz.in`, '_blank')}
-                            disabled={project.status !== 'deployed'}
+                            onClick={() => {
+                              const isActive = deployment.status === 'deployed' || deployment.status === 'running';
+                              if (isActive) {
+                                const url = deployment.url || `https://${deployment.subdomain}.aitoyz.in`;
+                                window.open(url, '_blank');
+                              }
+                            }}
+                            disabled={deployment.status !== 'deployed' && deployment.status !== 'running'}
                           >
                             <ExternalLink className="mr-2 h-4 w-4" />
                             Visit Site
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            View Logs
+                          <DropdownMenuItem
+                            onClick={() => {
+                              if (deployment.type === 'app') {
+                                navigate('/apps/deployments');
+                              }
+                            }}
+                          >
+                            View Details
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-red-600">
-                            Delete Project
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {project.status === 'deployed' && (
+                    {(deployment.status === 'deployed' || deployment.status === 'running') && (
                       <div className="p-2 rounded-md bg-muted/50 border">
                         <p className="text-xs text-muted-foreground mb-1">Production</p>
                         <code className="text-xs font-mono">
-                          {project.subdomain}.aitoyz.in
+                          {deployment.subdomain}.aitoyz.in
                         </code>
                       </div>
                     )}
@@ -276,19 +330,22 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>{formatDate(project.createdAt)}</span>
+                        <span>{formatDate(deployment.createdAt)}</span>
                       </div>
-                      {project.port > 0 && (
-                        <span className="font-mono">:{project.port}</span>
+                      {deployment.port > 0 && (
+                        <span className="font-mono">:{deployment.port}</span>
                       )}
                     </div>
 
-                    {project.status === 'deployed' && (
+                    {(deployment.status === 'deployed' || deployment.status === 'running') && (
                       <Button 
                         variant="outline" 
                         size="sm"
                         className="w-full"
-                        onClick={() => window.open(`https://${project.subdomain}.aitoyz.in`, '_blank')}
+                        onClick={() => {
+                          const url = deployment.url || `https://${deployment.subdomain}.aitoyz.in`;
+                          window.open(url, '_blank');
+                        }}
                       >
                         <ExternalLink className="mr-2 h-3 w-3" />
                         Visit
@@ -302,7 +359,7 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        {userProjects.length > 0 && (
+        {allDeployments.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
@@ -310,25 +367,33 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {userProjects.slice(0, 5).map((project: any) => (
-                  <div key={project._id} className="flex items-center gap-4">
+                {allDeployments.slice(0, 5).map((deployment: any) => (
+                  <div key={deployment._id} className="flex items-center gap-4">
                     <div className={`h-2 w-2 rounded-full ${
-                      project.status === 'deployed' ? 'bg-green-500' :
-                      project.status === 'deploying' ? 'bg-blue-500' :
-                      project.status === 'failed' ? 'bg-red-500' :
+                      deployment.status === 'deployed' || deployment.status === 'running' ? 'bg-green-500' :
+                      deployment.status === 'deploying' ? 'bg-blue-500' :
+                      deployment.status === 'failed' ? 'bg-red-500' :
                       'bg-gray-500'
                     }`} />
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{project.name}</p>
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        {deployment.name}
+                        {deployment.type === 'app' && (
+                          <Badge variant="outline" className="text-xs">
+                            <Package className="h-3 w-3 mr-1" />
+                            App
+                          </Badge>
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {project.status === 'deployed' ? 'Deployed successfully' :
-                         project.status === 'deploying' ? 'Building...' :
-                         project.status === 'failed' ? 'Deployment failed' :
+                        {deployment.status === 'deployed' || deployment.status === 'running' ? 'Deployed successfully' :
+                         deployment.status === 'deploying' ? 'Building...' :
+                         deployment.status === 'failed' ? 'Deployment failed' :
                          'Queued for deployment'}
                       </p>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatDate(project.createdAt)}
+                      {formatDate(deployment.createdAt)}
                     </div>
                   </div>
                 ))}

@@ -1,7 +1,16 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { ThemeProvider } from "@/components/theme-provider";
-import { LandingPage, Dashboard, TerminalPage, NotFound, CreateProject } from "@/pages";
+import { 
+  LandingPage, 
+  Dashboard, 
+  TerminalPage, 
+  NotFound, 
+  CreateProject,
+  AppsMarketplace,
+  AdminApps,
+  MyDeployments
+} from "@/pages";
 import SignInPage from "@/pages/SignInPage";
 import SignUpPage from "@/pages/SignUpPage";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
@@ -34,6 +43,30 @@ export function App() {
               element={
                 <ProtectedRoute>
                   <CreateProject />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/apps" 
+              element={
+                <ProtectedRoute>
+                  <AppsMarketplace />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/apps/deployments" 
+              element={
+                <ProtectedRoute>
+                  <MyDeployments />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/apps" 
+              element={
+                <ProtectedRoute>
+                  <AdminApps />
                 </ProtectedRoute>
               } 
             />

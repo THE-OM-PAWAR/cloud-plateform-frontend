@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
@@ -31,7 +31,6 @@ export const DeploymentProgress: React.FC<DeploymentProgressProps> = ({
   onComplete,
   onError
 }) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [logs, setLogs] = useState<DeploymentLog[]>([]);
   const [currentStep, setCurrentStep] = useState<DeploymentStep | null>(null);
   const [status, setStatus] = useState<'idle' | 'deploying' | 'success' | 'error'>('idle');
@@ -52,8 +51,6 @@ export const DeploymentProgress: React.FC<DeploymentProgressProps> = ({
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
-    
-    setSocket(newSocket);
 
     newSocket.on('connect', () => {
       console.log('✅ Connected to deployment server, socket ID:', newSocket.id);
