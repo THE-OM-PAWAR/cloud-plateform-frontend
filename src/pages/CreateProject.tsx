@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import ProjectForm from "@/components/ProjectForm";
 import { AuthLayout } from "@/components/AuthLayout";
 
@@ -37,76 +37,67 @@ const CreateProject = () => {
 
   return (
     <AuthLayout>
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-6">
+      <div className="max-w-2xl mx-auto space-y-8">
+        {/* Header */}
+        <div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/dashboard")}
-            className="gap-2 mb-4"
+            className="mb-4"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
           </Button>
-          <h1 className="text-4xl font-bold mb-2">Deploy New Project</h1>
-          <p className="text-muted-foreground">
-            Deploy your frontend application from a GitHub repository
+          <h1 className="text-3xl font-bold tracking-tight">Deploy New Project</h1>
+          <p className="text-muted-foreground mt-2">
+            Import your Git repository and deploy it with a single click
           </p>
         </div>
 
         {/* Deployment Form */}
-        {!deploymentResult && !error && (
-          <ProjectForm
-            onSuccess={handleDeploymentSuccess}
-            onError={handleDeploymentError}
-          />
-        )}
+        {!deploymentResult && !error && <ProjectForm onSuccess={handleDeploymentSuccess} onError={handleDeploymentError} />}
 
         {/* Success Result */}
         {deploymentResult && (
-          <Card className="border-green-500 bg-green-50 dark:bg-green-950">
+          <Card className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
             <CardHeader>
-              <CardTitle className="text-green-700 dark:text-green-300 flex items-center gap-2">
-                <span className="text-2xl">🎉</span>
-                Deployment Successful!
-              </CardTitle>
-              <CardDescription className="text-green-600 dark:text-green-400">
-                Your project has been deployed and is now live
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <CardTitle className="text-green-900 dark:text-green-100">
+                  Deployment Successful
+                </CardTitle>
+              </div>
+              <CardDescription className="text-green-700 dark:text-green-300">
+                Your project is now live and accessible
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-md">
-                  <span className="text-sm font-medium text-muted-foreground">Project Name:</span>
-                  <span className="font-mono font-semibold">{deploymentResult.projectName}</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                  <span className="text-sm text-muted-foreground">Project</span>
+                  <span className="font-mono font-medium">{deploymentResult.projectName}</span>
                 </div>
                 
-                <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-md">
-                  <span className="text-sm font-medium text-muted-foreground">Port:</span>
+                <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                  <span className="text-sm text-muted-foreground">Port</span>
                   <span className="font-mono">{deploymentResult.port}</span>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-md">
-                  <span className="text-sm font-medium text-muted-foreground">SSL:</span>
-                  <span className={deploymentResult.sslEnabled ? "text-green-600" : "text-yellow-600"}>
-                    {deploymentResult.sslEnabled ? "✓ Enabled" : "⚠ Not Enabled"}
-                  </span>
                 </div>
               </div>
 
-              <div className="p-4 bg-white dark:bg-gray-900 rounded-md border-2 border-green-500">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Your site is live at:</p>
+              <div className="p-4 bg-background rounded-lg border">
+                <p className="text-sm text-muted-foreground mb-2">Live URL</p>
                 <a
                   href={deploymentResult.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-lg font-semibold text-primary hover:underline break-all"
+                  className="text-sm font-medium hover:underline break-all"
                 >
                   {deploymentResult.url}
                 </a>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <Button
                   onClick={() => window.open(deploymentResult.url, '_blank')}
                   className="flex-1"
@@ -120,13 +111,6 @@ const CreateProject = () => {
                 >
                   Deploy Another
                 </Button>
-                <Button
-                  onClick={() => navigate("/dashboard")}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Go to Dashboard
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -134,67 +118,35 @@ const CreateProject = () => {
 
         {/* Error Result */}
         {error && (
-          <Card className="border-red-500 bg-red-50 dark:bg-red-950">
+          <Card className="border-red-500/50 bg-red-50 dark:bg-red-950/20">
             <CardHeader>
-              <CardTitle className="text-red-700 dark:text-red-300 flex items-center gap-2">
-                <span className="text-2xl">❌</span>
-                Deployment Failed
-              </CardTitle>
-              <CardDescription className="text-red-600 dark:text-red-400">
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <CardTitle className="text-red-900 dark:text-red-100">
+                  Deployment Failed
+                </CardTitle>
+              </div>
+              <CardDescription className="text-red-700 dark:text-red-300">
                 There was an error deploying your project
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 bg-white dark:bg-gray-900 rounded-md">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Error Details:</p>
-                <p className="text-red-600 dark:text-red-400 font-mono text-sm">{error}</p>
+              <div className="p-4 bg-background rounded-lg border">
+                <p className="text-sm font-medium mb-2">Error Details</p>
+                <p className="text-sm text-red-600 dark:text-red-400 font-mono">{error}</p>
               </div>
 
               <div className="flex gap-3">
-                <Button
-                  onClick={handleReset}
-                  className="flex-1"
-                >
+                <Button onClick={handleReset} className="flex-1">
                   Try Again
                 </Button>
-                <Button
-                  onClick={() => navigate("/dashboard")}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={() => navigate("/dashboard")} variant="outline" className="flex-1">
                   Back to Dashboard
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
-
-        {/* Info Section */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="text-lg">Deployment Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-start gap-2">
-                <span className="font-semibold min-w-[140px]">Supported Frameworks:</span>
-                <span>React, Vite, Next.js (static), Vue, Angular</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="font-semibold min-w-[140px]">Build Directories:</span>
-                <span>dist/, build/, .next/, out/</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="font-semibold min-w-[140px]">Requirements:</span>
-                <span>Public GitHub repository with package.json and build script</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="font-semibold min-w-[140px]">Deployment Time:</span>
-                <span>Typically 2-5 minutes depending on project size</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AuthLayout>
   );

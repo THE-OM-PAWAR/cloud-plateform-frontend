@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { ThemeProvider } from "@/components/theme-provider";
 import { LandingPage, Dashboard, TerminalPage, NotFound, CreateProject } from "@/pages";
 import SignInPage from "@/pages/SignInPage";
 import SignUpPage from "@/pages/SignUpPage";
@@ -13,40 +14,42 @@ if (!CLERK_PUBLISHABLE_KEY) {
 
 export function App() {
   return (
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/sign-in/*" element={<SignInPage />} />
-          <Route path="/sign-up/*" element={<SignUpPage />} />
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/create-project" 
-            element={
-              <ProtectedRoute>
-                <CreateProject />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/bash" 
-            element={
-              <ProtectedRoute>
-                <TerminalPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-    </ClerkProvider>
+    <ThemeProvider defaultTheme="system" storageKey="clouddeploy-theme">
+      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+        <Router>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/sign-in/*" element={<SignInPage />} />
+            <Route path="/sign-up/*" element={<SignUpPage />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/create-project" 
+              element={
+                <ProtectedRoute>
+                  <CreateProject />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/bash" 
+              element={
+                <ProtectedRoute>
+                  <TerminalPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </ClerkProvider>
+    </ThemeProvider>
   );
 }
 

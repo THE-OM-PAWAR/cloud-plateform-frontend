@@ -6,19 +6,26 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { 
-  Terminal, 
   Plus, 
   Search, 
-  Server, 
-  Activity, 
-  Clock, 
-  Settings,
-  MoreHorizontal,
-  Cloud
+  ExternalLink,
+  GitBranch,
+  Clock,
+  Loader2,
+  Activity,
+  Server,
+  TrendingUp,
+  Zap,
+  MoreVertical
 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AuthLayout } from "@/components/AuthLayout";
 import { api } from "@/services/api";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -33,12 +40,10 @@ const Dashboard = () => {
       if (user) {
         try {
           const token = await getToken();
-          // Sync user with backend
           await api.post('/auth/sync-user', { clerkId: user.id }, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
-          // Fetch user projects
           const response = await api.get('/user/projects', {
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -54,46 +59,29 @@ const Dashboard = () => {
     syncUser();
   }, [user, getToken]);
 
-  // Use real projects if available, otherwise show empty state
-  const projectsToDisplay = userProjects.length > 0 ? userProjects : [];
-  
-  const filteredProjects = projectsToDisplay.filter(project =>
+  const filteredProjects = userProjects.filter((project: any) =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (project.repositoryUrl && project.repositoryUrl.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "deployed":
-        return "bg-green-500";
-      case "deploying":
-        return "bg-blue-500";
-      case "failed":
-        return "bg-red-500";
-      case "stopped":
-        return "bg-gray-500";
-      case "pending":
-        return "bg-yellow-500";
-      default:
-        return "bg-gray-500";
-    }
+  const stats = {
+    total: userProjects.length,
+    deployed: userProjects.filter((p: any) => p.status === 'deployed').length,
+    deploying: userProjects.filter((p: any) => p.status === 'deploying').length,
+    failed: userProjects.filter((p: any) => p.status === 'failed').length,
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "deployed":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Deployed</Badge>;
-      case "deploying":
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Deploying</Badge>;
-      case "failed":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Failed</Badge>;
-      case "stopped":
-        return <Badge variant="secondary">Stopped</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
+    const variants: Record<string, { variant: any; label: string; className?: string }> = {
+      deployed: { variant: "default", label: "Ready", className: "bg-green-500 hover:bg-green-600" },
+      deploying: { variant: "secondary", label: "Building" },
+      failed: { variant: "destructive", label: "Error" },
+      stopped: { variant: "outline", label: "Stopped" },
+      pending: { variant: "secondary", label: "Queued" }
+    };
+    
+    const config = variants[status] || variants.pending;
+    return <Badge variant={config.variant} className={`text-xs ${config.className || ''}`}>{config.label}</Badge>;
   };
 
   const formatDate = (dateString: string) => {
@@ -105,251 +93,249 @@ const Dashboard = () => {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-      </div>
+      <AuthLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
     <AuthLayout>
-
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 border-r bg-muted/10 min-h-[calc(100vh-73px)]">
-          <div className="p-6">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">OVERVIEW</h3>
-                <div className="space-y-1">
-                  <Button variant="ghost" className="w-full justify-start text-primary bg-primary/10">
-                    <Activity className="mr-2 h-4 w-4" />
-                    Dashboard
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Server className="mr-2 h-4 w-4" />
-                    Servers
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Terminal className="mr-2 h-4 w-4" />
-                    Sessions
-                  </Button>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">TOOLS</h3>
-                <div className="space-y-1">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    onClick={() => navigate("/bash")}
-                  >
-                    <Terminal className="mr-2 h-4 w-4" />
-                    Terminal
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          {/* Page Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold">Overview</h1>
-                <p className="text-muted-foreground">Manage your servers and terminal sessions</p>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={() => navigate("/create-project")} variant="default">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Project
-                </Button>
-                <Button onClick={() => navigate("/bash")} variant="outline">
-                  <Terminal className="mr-2 h-4 w-4" />
-                  New Terminal
-                </Button>
-              </div>
-            </div>
-
-            {/* Search */}
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search servers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Servers</CardTitle>
-                <Server className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{userProjects.length}</div>
-                <p className="text-xs text-muted-foreground">{userProjects.filter(p => p.status === 'deployed').length} deployed</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Deployments</CardTitle>
-                <Terminal className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{userProjects.filter(p => p.status === 'deploying').length}</div>
-                <p className="text-xs text-muted-foreground">Currently deploying</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Uptime</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">99.9%</div>
-                <p className="text-xs text-muted-foreground">Last 30 days</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Data Transfer</CardTitle>
-                <Cloud className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">2.4GB</div>
-                <p className="text-xs text-muted-foreground">This month</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Connection Test - Add this for debugging */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Backend Connection Status</h2>
-            <ConnectionTest />
-          </div>
-
-          {/* Projects Grid */}
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold mb-4">Your Projects</h2>
-            
-            {filteredProjects.length === 0 ? (
-              <Card className="p-12 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <Server className="h-16 w-16 text-muted-foreground" />
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Deploy your first project to get started
-                    </p>
-                    <Button onClick={() => navigate("/create-project")}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Your First Project
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProjects.map((project: any) => (
-                  <Card key={project._id} className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`} />
-                          <div>
-                            <CardTitle className="text-lg">{project.name}</CardTitle>
-                            <CardDescription className="text-xs truncate max-w-[200px]">
-                              {project.subdomain}.aitoyz.in
-                            </CardDescription>
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={() => window.open(`https://${project.subdomain}.aitoyz.in`, '_blank')}
-                              disabled={project.status !== 'deployed'}
-                            >
-                              <Cloud className="mr-2 h-4 w-4" />
-                              Visit Site
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Settings className="mr-2 h-4 w-4" />
-                              Settings
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Status</span>
-                          {getStatusBadge(project.status)}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Port</span>
-                          <span className="text-sm font-medium">{project.port}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Repository</span>
-                          <span className="text-sm font-medium truncate max-w-[150px]">
-                            {project.repositoryUrl.split('/').slice(-2).join('/')}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Deployed</span>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Clock className="mr-1 h-3 w-3" />
-                            {formatDate(project.createdAt)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t">
-                        <Button 
-                          className="w-full" 
-                          variant={project.status === "deployed" ? "default" : "outline"}
-                          onClick={() => window.open(`https://${project.subdomain}.aitoyz.in`, '_blank')}
-                          disabled={project.status !== 'deployed'}
-                        >
-                          <Cloud className="mr-2 h-4 w-4" />
-                          {project.status === "deployed" ? "Visit Site" : "Deploying..."}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Overview of your deployments and activity
+            </p>
+          </div>
+          <Button onClick={() => navigate("/create-project")}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Project
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+              <Server className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.deployed} deployed
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Deployments</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.deployed}</div>
+              <p className="text-xs text-muted-foreground">
+                Running successfully
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Building</CardTitle>
+              <Zap className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.deploying}</div>
+              <p className="text-xs text-muted-foreground">
+                In progress
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.total > 0 ? Math.round((stats.deployed / stats.total) * 100) : 0}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.failed} failed
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Projects Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold tracking-tight">Projects</h2>
+            {userProjects.length > 0 && (
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search projects..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             )}
           </div>
-        </main>
+
+          {/* Projects List */}
+          {filteredProjects.length === 0 && userProjects.length === 0 ? (
+            <Card className="p-12 text-center border-dashed">
+              <div className="flex flex-col items-center gap-4">
+                <div className="rounded-full bg-muted p-4">
+                  <GitBranch className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold">No projects yet</h3>
+                  <p className="text-muted-foreground max-w-sm">
+                    Get started by deploying your first project from a Git repository
+                  </p>
+                </div>
+                <Button onClick={() => navigate("/create-project")} className="mt-2">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Project
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map((project: any) => (
+                <Card 
+                  key={project._id} 
+                  className="hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          {project.name}
+                          {getStatusBadge(project.status)}
+                        </CardTitle>
+                        <CardDescription className="text-xs flex items-center gap-1">
+                          <GitBranch className="h-3 w-3" />
+                          <span className="truncate">
+                            {project.repositoryUrl.replace('https://github.com/', '')}
+                          </span>
+                        </CardDescription>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => project.status === 'deployed' && window.open(`https://${project.subdomain}.aitoyz.in`, '_blank')}
+                            disabled={project.status !== 'deployed'}
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Visit Site
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            View Logs
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600">
+                            Delete Project
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {project.status === 'deployed' && (
+                      <div className="p-2 rounded-md bg-muted/50 border">
+                        <p className="text-xs text-muted-foreground mb-1">Production</p>
+                        <code className="text-xs font-mono">
+                          {project.subdomain}.aitoyz.in
+                        </code>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{formatDate(project.createdAt)}</span>
+                      </div>
+                      {project.port > 0 && (
+                        <span className="font-mono">:{project.port}</span>
+                      )}
+                    </div>
+
+                    {project.status === 'deployed' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full"
+                        onClick={() => window.open(`https://${project.subdomain}.aitoyz.in`, '_blank')}
+                      >
+                        <ExternalLink className="mr-2 h-3 w-3" />
+                        Visit
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Activity */}
+        {userProjects.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Latest deployments and updates</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {userProjects.slice(0, 5).map((project: any) => (
+                  <div key={project._id} className="flex items-center gap-4">
+                    <div className={`h-2 w-2 rounded-full ${
+                      project.status === 'deployed' ? 'bg-green-500' :
+                      project.status === 'deploying' ? 'bg-blue-500' :
+                      project.status === 'failed' ? 'bg-red-500' :
+                      'bg-gray-500'
+                    }`} />
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium">{project.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {project.status === 'deployed' ? 'Deployed successfully' :
+                         project.status === 'deploying' ? 'Building...' :
+                         project.status === 'failed' ? 'Deployment failed' :
+                         'Queued for deployment'}
+                      </p>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatDate(project.createdAt)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AuthLayout>
   );

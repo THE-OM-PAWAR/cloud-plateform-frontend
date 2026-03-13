@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Github, Globe, Rocket } from "lucide-react";
+import { Loader2, Github, Globe, Rocket, AlertCircle } from "lucide-react";
 import { deploymentApi, type DeploymentResponse } from "@/services/api";
 import { DeploymentProgress } from "./DeploymentProgress";
 
@@ -23,25 +23,23 @@ const ProjectForm = ({ onSuccess, onError }: ProjectFormProps) => {
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
-    // Validate site name
     if (!siteName.trim()) {
-      setValidationError("Site name is required");
+      setValidationError("Project name is required");
       return false;
     }
 
     if (siteName.length < 3) {
-      setValidationError("Site name must be at least 3 characters");
+      setValidationError("Project name must be at least 3 characters");
       return false;
     }
 
     if (!/^[a-z0-9-]+$/.test(siteName)) {
-      setValidationError("Site name can only contain lowercase letters, numbers, and hyphens");
+      setValidationError("Project name can only contain lowercase letters, numbers, and hyphens");
       return false;
     }
 
-    // Validate GitHub URL
     if (!repoUrl.trim()) {
-      setValidationError("GitHub repository URL is required");
+      setValidationError("Repository URL is required");
       return false;
     }
 
@@ -56,7 +54,6 @@ const ProjectForm = ({ onSuccess, onError }: ProjectFormProps) => {
   };
 
   const handleDeploy = async () => {
-    // Validate form
     if (!validateForm()) {
       return;
     }
@@ -65,18 +62,12 @@ const ProjectForm = ({ onSuccess, onError }: ProjectFormProps) => {
     setValidationError(null);
 
     try {
-      console.log("🚀 Starting deployment...");
-      console.log("Site Name:", siteName);
-      console.log("Repository URL:", repoUrl);
-
-      // Get authentication token
       const token = await getToken();
       
       if (!token) {
         throw new Error("Authentication required. Please sign in again.");
       }
 
-      // Make API request using the deployment service
       const result = await deploymentApi.deploy({
         repoUrl: repoUrl.trim(),
         siteName: siteName.trim()
@@ -86,34 +77,24 @@ const ProjectForm = ({ onSuccess, onError }: ProjectFormProps) => {
         }
       });
 
-      console.log("✅ Deployment initiated:", result);
-      
-      // Set deployment ID for real-time tracking
       if (result.deploymentId) {
         setDeploymentId(result.deploymentId);
       } else {
-        // Fallback for immediate success (shouldn't happen with new async approach)
         onSuccess(result);
         setIsDeploying(false);
       }
 
     } catch (error: any) {
-      console.error("❌ Deployment failed:", error);
-
       let errorMessage = "An unexpected error occurred during deployment";
 
       if (error.response) {
-        // Server responded with error
         errorMessage = error.response.data?.message || error.response.data?.error || errorMessage;
       } else if (error.request) {
-        // Request made but no response
         errorMessage = "Unable to connect to deployment server. Please check if the server is running.";
       } else {
-        // Error in request setup
         errorMessage = error.message;
       }
 
-      // Call error callback
       onError(errorMessage);
       setIsDeploying(false);
     }
@@ -140,52 +121,21 @@ const ProjectForm = ({ onSuccess, onError }: ProjectFormProps) => {
     setValidationError(null);
   };
 
-  const resetForm = () => {
-    setSiteName("");
-    setRepoUrl("");
-    setIsDeploying(false);
-    setDeploymentId(null);
-    setValidationError(null);
-  };
-
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Rocket className="h-5 w-5 text-primary" />
-            Project Configuration
-          </CardTitle>
+          <CardTitle>Configure Project</CardTitle>
           <CardDescription>
             Enter your project details to deploy to the cloud
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Site Name Input */}
-          <div className="space-y-2">
-            <Label htmlFor="siteName" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Site Name
-            </Label>
-            <Input
-              id="siteName"
-              type="text"
-              placeholder="my-awesome-site"
-              value={siteName}
-              onChange={handleSiteNameChange}
-              disabled={isDeploying}
-              className="font-mono"
-            />
-            <p className="text-xs text-muted-foreground">
-              Your site will be available at: <span className="font-mono font-semibold">{siteName || "your-site"}.aitoyz.in</span>
-            </p>
-          </div>
-
-          {/* GitHub Repository URL Input */}
+          {/* Repository URL Input */}
           <div className="space-y-2">
             <Label htmlFor="repoUrl" className="flex items-center gap-2">
               <Github className="h-4 w-4" />
-              GitHub Repository URL
+              Git Repository
             </Label>
             <Input
               id="repoUrl"
@@ -194,78 +144,60 @@ const ProjectForm = ({ onSuccess, onError }: ProjectFormProps) => {
               value={repoUrl}
               onChange={handleRepoUrlChange}
               disabled={isDeploying}
-              className="font-mono"
+              className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Must be a public GitHub repository with a build script
+              Must be a public GitHub repository
+            </p>
+          </div>
+
+          {/* Site Name Input */}
+          <div className="space-y-2">
+            <Label htmlFor="siteName" className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Project Name
+            </Label>
+            <Input
+              id="siteName"
+              type="text"
+              placeholder="my-awesome-project"
+              value={siteName}
+              onChange={handleSiteNameChange}
+              disabled={isDeploying}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Your site will be available at <span className="font-mono font-medium">{siteName || "your-project"}.aitoyz.in</span>
             </p>
           </div>
 
           {/* Validation Error */}
           {validationError && (
             <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>{validationError}</AlertDescription>
             </Alert>
           )}
 
           {/* Deploy Button */}
-          <div className="flex gap-2">
-            <Button
-              onClick={handleDeploy}
-              disabled={isDeploying || !siteName || !repoUrl}
-              className="flex-1"
-              size="lg"
-            >
-              {isDeploying ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deploying...
-                </>
-              ) : (
-                <>
-                  <Rocket className="mr-2 h-4 w-4" />
-                  Deploy Project
-                </>
-              )}
-            </Button>
-            
-            {isDeploying && (
-              <Button
-                onClick={resetForm}
-                variant="outline"
-                size="lg"
-              >
-                Cancel
-              </Button>
+          <Button
+            onClick={handleDeploy}
+            disabled={isDeploying || !siteName || !repoUrl}
+            className="w-full"
+            size="lg"
+          >
+            {isDeploying ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deploying...
+              </>
+            ) : (
+              <>
+                <Rocket className="mr-2 h-4 w-4" />
+                Deploy
+              </>
             )}
-          </div>
-
-          {/* Example Repositories */}
-          {!isDeploying && (
-            <div className="pt-4 border-t">
-              <p className="text-sm font-medium mb-2">Example repositories to try:</p>
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    setRepoUrl("https://github.com/THE-OM-PAWAR/gymnacity2");
-                    setSiteName("gymnacity");
-                  }}
-                  className="w-full text-left p-2 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors"
-                >
-                  <span className="font-mono">Next.js Gym Website</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setRepoUrl("https://github.com/vercel/next.js/tree/canary/examples/hello-world");
-                    setSiteName("nextjs-hello");
-                  }}
-                  className="w-full text-left p-2 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors"
-                >
-                  <span className="font-mono">Next.js Hello World</span>
-                </button>
-              </div>
-            </div>
-          )}
+          </Button>
         </CardContent>
       </Card>
 
