@@ -45,6 +45,7 @@ export interface AppDeployment {
   status: 'pending' | 'deploying' | 'running' | 'stopped' | 'failed';
   url?: string;
   errorMessage?: string;
+  resources?: { cpu: string; memory: string };
   createdAt: string;
   updatedAt: string;
 }

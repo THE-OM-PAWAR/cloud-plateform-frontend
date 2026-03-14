@@ -14,6 +14,7 @@ import {
 import SignInPage from "@/pages/SignInPage";
 import SignUpPage from "@/pages/SignUpPage";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
+import ProjectDetail from "@/pages/ProjectDetail";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -61,6 +62,14 @@ export function App() {
                   <MyDeployments />
                 </ProtectedRoute>
               } 
+            />
+            <Route
+              path="/project/:type/:name"
+              element={
+                <ProtectedRoute>
+                  <ProjectDetail />
+                </ProtectedRoute>
+              }
             />
             <Route 
               path="/admin/apps" 
