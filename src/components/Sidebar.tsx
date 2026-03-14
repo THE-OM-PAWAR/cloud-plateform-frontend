@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Settings,
   ShieldCheck,
+  Plug,
 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button';
@@ -17,13 +18,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const navItems = [
   { label: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
-  { label: 'Deploy', icon: Plus, href: '/create-project' },
-  { label: 'Deployments', icon: Layers, href: '/apps/deployments' },
+  { label: 'Deploy', icon: Plus, href: '/dashboard/deploy' },
+  { label: 'Projects', icon: Layers, href: '/dashboard/projects' },
   { label: 'Marketplace', icon: Package, href: '/apps' },
   { label: 'Terminal', icon: Terminal, href: '/bash' },
 ];
 
 const bottomItems = [
+  { label: 'Integrations', icon: Plug, href: '/dashboard/integrations' },
   { label: 'Settings', icon: Settings, href: '/settings' },
 ];
 

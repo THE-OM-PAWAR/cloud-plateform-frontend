@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { 
   LandingPage, 
   Dashboard, 
@@ -13,8 +14,11 @@ import {
 } from "@/pages";
 import SignInPage from "@/pages/SignInPage";
 import SignUpPage from "@/pages/SignUpPage";
-import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import ProjectDetail from "@/pages/ProjectDetail";
+import Integrations from "@/pages/Integrations";
+import DeployFromGitHub from "@/pages/DeployFromGitHub";
+import Projects from "@/pages/Projects";
+import { ProtectedRoute } from "@/auth/ProtectedRoute";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -24,7 +28,7 @@ if (!CLERK_PUBLISHABLE_KEY) {
 
 export function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="clouddeploy-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="clouddeploy-theme">
       <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
         <Router>
           <Routes>
@@ -36,6 +40,30 @@ export function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/deploy" 
+              element={
+                <ProtectedRoute>
+                  <DeployFromGitHub />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/projects" 
+              element={
+                <ProtectedRoute>
+                  <Projects />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/integrations" 
+              element={
+                <ProtectedRoute>
+                  <Integrations />
                 </ProtectedRoute>
               } 
             />
@@ -90,6 +118,7 @@ export function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
+        <Toaster />
       </ClerkProvider>
     </ThemeProvider>
   );
