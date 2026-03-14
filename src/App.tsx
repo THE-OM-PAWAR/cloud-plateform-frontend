@@ -18,6 +18,8 @@ import ProjectDetail from "@/pages/ProjectDetail";
 import Integrations from "@/pages/Integrations";
 import DeployFromGitHub from "@/pages/DeployFromGitHub";
 import Projects from "@/pages/Projects";
+import CodeReviewer from "@/pages/CodeReviewer";
+import ReviewWorkspace from "@/pages/ReviewWorkspace";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -28,7 +30,7 @@ if (!CLERK_PUBLISHABLE_KEY) {
 
 export function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="clouddeploy-theme">
+    <ThemeProvider defaultTheme="light" storageKey="clouddeploy-theme">
       <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
         <Router>
           <Routes>
@@ -56,6 +58,22 @@ export function App() {
               element={
                 <ProtectedRoute>
                   <Projects />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/reviewer" 
+              element={
+                <ProtectedRoute>
+                  <CodeReviewer />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/reviewer/:owner/:repo" 
+              element={
+                <ProtectedRoute>
+                  <ReviewWorkspace />
                 </ProtectedRoute>
               } 
             />
