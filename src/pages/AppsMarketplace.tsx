@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { AppCard } from '@/components/AppCard';
 import { DeployDialog } from '@/components/DeployDialog';
-import { DashboardHeader } from '@/components/DashboardHeader';
+import { AuthLayout } from '@/components/AuthLayout';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -80,11 +80,8 @@ export function AppsMarketplace() {
   const categories = ['all', ...Array.from(new Set(apps.map(app => app.category)))];
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+    <AuthLayout>
+      <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">App Marketplace</h1>
           <p className="text-muted-foreground">
             Deploy pre-configured applications with one click
@@ -167,8 +164,7 @@ export function AppsMarketplace() {
           }}
           onDeploy={handleDeploySubmit}
         />
-      </main>
-    </div>
+      </AuthLayout>
   );
 }
 

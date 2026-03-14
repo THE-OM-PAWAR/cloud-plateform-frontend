@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { DashboardHeader } from '@/components/DashboardHeader';
+import { AuthLayout } from '@/components/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -161,11 +161,8 @@ export function AdminApps() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+    <AuthLayout>
+      <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Admin - App Management</h1>
           <p className="text-muted-foreground">
             Create and manage app templates for the marketplace
@@ -438,8 +435,7 @@ export function AdminApps() {
             </Card>
           </div>
         </div>
-      </main>
-    </div>
+      </AuthLayout>
   );
 }
 

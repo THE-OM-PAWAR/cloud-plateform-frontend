@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { DashboardHeader } from '@/components/DashboardHeader';
+import { AuthLayout } from '@/components/AuthLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -144,10 +144,8 @@ export function MyDeployments() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader />
-      
-      <main className="container mx-auto px-4 py-8">
+    <AuthLayout>
+      <div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Deployments</h1>
           <p className="text-muted-foreground">
@@ -348,8 +346,8 @@ export function MyDeployments() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </main>
-    </div>
+      </div>
+    </AuthLayout>
   );
 }
 
