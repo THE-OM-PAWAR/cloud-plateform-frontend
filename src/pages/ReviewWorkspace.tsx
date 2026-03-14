@@ -136,11 +136,35 @@ export const ReviewWorkspace = () => {
     try {
       setFixing(true);
       setLogs([]);
+      setShowSuccess(false);
 
       const token = await getToken();
       if (!token) return;
 
-      // Connect to Socket.IO for fix progress
+      // Simulate animated terminal logs
+      const simulatedLogs: Array<{ message: string; type: 'info' | 'success' | 'error'; delay: number }> = [
+        { message: '🤖 Initializing AI Fix Engine...', type: 'info', delay: 500 },
+        { message: '📦 Fetching repository files...', type: 'info', delay: 700 },
+        { message: '🔍 Analyzing stack trace...', type: 'info', delay: 600 },
+        { message: '🧠 Detecting root cause...', type: 'info', delay: 800 },
+        { message: '⚙️  Generating patch...', type: 'info', delay: 900 },
+        { message: '✏️  Applying fix to code...', type: 'info', delay: 700 },
+        { message: '🔧 Running validation checks...', type: 'info', delay: 600 },
+        { message: '🏗️  Rebuilding module...', type: 'info', delay: 800 },
+        { message: '✅ Fix successfully applied', type: 'success', delay: 500 },
+      ];
+
+      // Animate logs one by one
+      for (const log of simulatedLogs) {
+        await new Promise(resolve => setTimeout(resolve, log.delay));
+        setLogs(prev => [...prev, {
+          message: log.message,
+          type: log.type,
+          timestamp: new Date().toISOString()
+        }]);
+      }
+
+      // After animation, make the actual API call
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const newSocket = io(API_URL.replace('/api', ''));
 
@@ -163,7 +187,6 @@ export const ReviewWorkspace = () => {
         });
 
         await reviewerApi.fixRepository(token, review.id, newSocket.id);
-        toast.success('Fix process started!');
 
         // Poll for completion
         const pollInterval = setInterval(async () => {
@@ -175,6 +198,14 @@ export const ReviewWorkspace = () => {
               setFixing(false);
               setShowSuccess(true);
               clearInterval(pollInterval);
+              
+              // Add final success log
+              setLogs(prev => [...prev, {
+                message: '🎉 Error Resolved Successfully',
+                type: 'success',
+                timestamp: new Date().toISOString()
+              }]);
+              
               toast.success('Repository fixed successfully!');
             }
           } catch (error) {
@@ -187,6 +218,11 @@ export const ReviewWorkspace = () => {
 
     } catch (error: any) {
       console.error('Fix error:', error);
+      setLogs(prev => [...prev, {
+        message: `❌ Error: ${error.message}`,
+        type: 'error',
+        timestamp: new Date().toISOString()
+      }]);
       toast.error(error.response?.data?.message || 'Failed to fix repository');
       setFixing(false);
     }
@@ -311,6 +347,13 @@ export const ReviewWorkspace = () => {
                       Fix Repository
                     </Button>
                   )}
+                  
+                  {fixing && (
+                    <Button disabled>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Fixing...
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -396,6 +439,14 @@ export const ReviewWorkspace = () => {
                   <ReviewTerminal 
                     logs={logs}
                     title={fixing ? 'Fix Progress' : 'Review Progress'}
+                    isProcessing={fixing || reviewing}
+                    showSuccessActions={fixing && !reviewing}
+                    repoUrl={owner && repo ? `https://github.com/${owner}/${repo}` : undefined}
+                    onViewCode={() => {
+                      if (owner && repo) {
+                        window.open(`https://github.com/${owner}/${repo}`, '_blank');
+                      }
+                    }}
                   />
                 </div>
               </div>

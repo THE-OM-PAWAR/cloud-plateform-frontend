@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Terminal, CheckCircle2, XCircle, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Terminal, CheckCircle2, XCircle, Info, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface LogEntry {
@@ -16,10 +17,44 @@ interface DeploymentLogsProps {
 
 export const DeploymentLogs = ({ logs, status }: DeploymentLogsProps) => {
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showJumpButton, setShowJumpButton] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
 
+  // Auto-scroll to bottom when new logs appear
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
+    if (!isUserScrolling && logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [logs, isUserScrolling]);
+
+  // Detect user scrolling
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+      
+      setShowJumpButton(!isAtBottom);
+      
+      // If user scrolls to bottom, resume auto-scroll
+      if (isAtBottom) {
+        setIsUserScrolling(false);
+      } else {
+        setIsUserScrolling(true);
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToBottom = () => {
+    setIsUserScrolling(false);
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -61,7 +96,7 @@ export const DeploymentLogs = ({ logs, status }: DeploymentLogsProps) => {
   };
 
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -72,7 +107,10 @@ export const DeploymentLogs = ({ logs, status }: DeploymentLogsProps) => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-lg bg-black p-4 font-mono text-sm h-[400px] overflow-y-auto">
+        <div 
+          ref={scrollContainerRef}
+          className="rounded-lg bg-black p-4 font-mono text-sm h-[400px] overflow-y-auto relative"
+        >
           {logs.length === 0 ? (
             <div className="text-gray-500">Waiting for deployment to start...</div>
           ) : (
@@ -81,7 +119,7 @@ export const DeploymentLogs = ({ logs, status }: DeploymentLogsProps) => {
                 <div
                   key={index}
                   className={cn(
-                    'flex items-start gap-2',
+                    'flex items-start gap-2 animate-fade-in',
                     log.type === 'error' && 'text-red-400',
                     log.type === 'success' && 'text-green-400',
                     log.type === 'info' && 'text-gray-300'
@@ -94,8 +132,35 @@ export const DeploymentLogs = ({ logs, status }: DeploymentLogsProps) => {
               <div ref={logsEndRef} />
             </div>
           )}
+          
+          {/* Jump to Latest Button */}
+          {showJumpButton && logs.length > 0 && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="absolute bottom-2 right-2 shadow-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-600"
+              onClick={scrollToBottom}
+            >
+              <ArrowDown className="h-3.5 w-3.5 mr-1.5" />
+              Jump to Latest
+            </Button>
+          )}
         </div>
       </CardContent>
+      
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+      `}</style>
     </Card>
   );
 };

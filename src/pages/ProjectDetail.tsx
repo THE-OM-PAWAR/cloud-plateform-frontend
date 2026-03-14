@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { AuthLayout } from '@/components/AuthLayout';
@@ -91,6 +91,7 @@ export default function ProjectDetail() {
   const [tab, setTab] = useState<TabType>('deployment');
   const [logs, setLogs] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [previewError, setPreviewError] = useState(false);
@@ -101,6 +102,13 @@ export default function ProjectDetail() {
   useEffect(() => {
     if (tab === 'logs' && !logs) fetchLogs();
   }, [tab]);
+
+  // Auto-scroll logs to bottom when they update
+  useEffect(() => {
+    if (tab === 'logs' && logs && logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
+  }, [logs, tab]);
 
   const load = async () => {
     if (!name || !type) return;
@@ -442,14 +450,18 @@ export default function ProjectDetail() {
 
             {/* ── LOGS TAB ── */}
             {tab === 'logs' && (
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden relative">
                 <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
                   <span className="text-sm font-medium">Container Logs</span>
                   <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={fetchLogs} disabled={logsLoading}>
                     <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${logsLoading ? 'animate-spin' : ''}`} />Refresh
                   </Button>
                 </div>
-                <div className="bg-zinc-950 text-green-400 p-4 font-mono text-xs min-h-[400px] overflow-auto">
+                <div 
+                  ref={logsContainerRef}
+                  className="bg-zinc-950 text-green-400 p-4 font-mono text-xs min-h-[400px] max-h-[600px] overflow-auto relative" 
+                  id="logs-container"
+                >
                   {projectType !== 'app' ? (
                     <p className="text-zinc-500">Logs are only available for App Marketplace deployments.</p>
                   ) : logsLoading ? (
