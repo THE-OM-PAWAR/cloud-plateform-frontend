@@ -13,7 +13,8 @@ import {
   Trash2, 
   FileText,
   AlertCircle,
-  Package
+  Package,
+  AlertTriangle
 } from 'lucide-react';
 import { appsApi, type AppDeployment, type App } from '@/services/appsApi';
 import {
@@ -23,6 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export function MyDeployments() {
   const { getToken } = useAuth();
@@ -32,6 +43,9 @@ export function MyDeployments() {
   const [logs, setLogs] = useState<string>('');
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [selectedDeployment, setSelectedDeployment] = useState<string>('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deploymentToDelete, setDeploymentToDelete] = useState<AppDeployment | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadDeployments();
@@ -75,16 +89,24 @@ export function MyDeployments() {
   };
 
   const handleDelete = async (projectName: string) => {
-    if (!confirm('Are you sure you want to delete this deployment?')) return;
-    
+    setIsDeleting(true);
     try {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       await appsApi.deleteDeployment(projectName, token);
+      setDeleteDialogOpen(false);
+      setDeploymentToDelete(null);
       await loadDeployments();
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to delete deployment');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const openDeleteDialog = (deployment: AppDeployment) => {
+    setDeploymentToDelete(deployment);
+    setDeleteDialogOpen(true);
   };
 
   const handleViewLogs = async (projectName: string) => {
@@ -116,8 +138,9 @@ export function MyDeployments() {
   };
 
   const getAppName = (deployment: AppDeployment): string => {
+    if (!deployment.app) return 'Unknown App';
     if (typeof deployment.app === 'string') return 'Unknown App';
-    return (deployment.app as App).name;
+    return (deployment.app as App).name || 'Unknown App';
   };
 
   return (
@@ -249,7 +272,7 @@ export function MyDeployments() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleDelete(deployment.projectName)}
+                        onClick={() => openDeleteDialog(deployment)}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
@@ -275,6 +298,56 @@ export function MyDeployments() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                Delete Deployment
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>
+                  Are you sure you want to delete <strong>{deploymentToDelete?.projectName}</strong>?
+                </p>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm">
+                  <p className="font-semibold text-destructive mb-2">This action will:</p>
+                  <ul className="space-y-1 text-destructive/90">
+                    <li>• Stop and remove the Docker container</li>
+                    <li>• Delete the Nginx configuration</li>
+                    <li>• Remove the SSL certificate</li>
+                    <li>• Delete all project files</li>
+                    <li>• Remove the database record</li>
+                  </ul>
+                </div>
+                <p className="text-destructive font-semibold">
+                  This action cannot be undone.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deploymentToDelete && handleDelete(deploymentToDelete.projectName)}
+                disabled={isDeleting}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Permanently
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

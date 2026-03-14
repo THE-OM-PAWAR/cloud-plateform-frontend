@@ -39,9 +39,31 @@ export function DeployDialog({ app, open, onClose, onDeploy }: DeployDialogProps
       return;
     }
 
-    // Validate required env vars
+    // Validate required env vars (skip validation for placeholder values)
     const missingVars = app.env
-      .filter(env => env.required && !envVars[env.key])
+      .filter(env => {
+        // Not required? Skip it
+        if (!env.required) return false;
+        
+        const userValue = envVars[env.key];
+        const defaultValue = env.value;
+        
+        // User provided a value? Not missing
+        if (userValue && userValue.trim()) return false;
+        
+        // Has a default value with placeholder pattern? Backend will handle it
+        if (defaultValue && typeof defaultValue === 'string' && defaultValue.includes('{{')) {
+          return false;
+        }
+        
+        // Has any non-empty default value? Not missing
+        if (defaultValue && typeof defaultValue === 'string' && defaultValue.trim()) {
+          return false;
+        }
+        
+        // Otherwise it's missing
+        return true;
+      })
       .map(env => env.key);
 
     if (missingVars.length > 0) {
@@ -114,25 +136,46 @@ export function DeployDialog({ app, open, onClose, onDeploy }: DeployDialogProps
             {app.env.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Environment Variables</h3>
-                {app.env.map((envVar) => (
-                  <div key={envVar.key} className="space-y-2">
-                    <Label htmlFor={envVar.key}>
-                      {envVar.key}
-                      {envVar.required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-                    <Input
-                      id={envVar.key}
-                      type={envVar.key.toLowerCase().includes('password') ? 'password' : 'text'}
-                      placeholder={envVar.value || envVar.description}
-                      value={envVars[envVar.key] || ''}
-                      onChange={(e) => setEnvVars({ ...envVars, [envVar.key]: e.target.value })}
-                      disabled={isDeploying}
-                    />
-                    {envVar.description && (
-                      <p className="text-xs text-muted-foreground">{envVar.description}</p>
-                    )}
-                  </div>
-                ))}
+                {app.env.map((envVar) => {
+                  const isPlaceholder = envVar.value && /\{\{.+\}\}/.test(envVar.value);
+                  const hasDefault = envVar.value && envVar.value.trim() && !isPlaceholder;
+                  
+                  return (
+                    <div key={envVar.key} className="space-y-2">
+                      <Label htmlFor={envVar.key}>
+                        {envVar.key}
+                        {envVar.required && !hasDefault && !isPlaceholder && (
+                          <span className="text-red-500 ml-1">*</span>
+                        )}
+                        {isPlaceholder && (
+                          <span className="text-xs text-muted-foreground ml-2">(auto-filled)</span>
+                        )}
+                      </Label>
+                      <Input
+                        id={envVar.key}
+                        type={envVar.key.toLowerCase().includes('password') ? 'password' : 'text'}
+                        placeholder={
+                          isPlaceholder 
+                            ? `Auto-filled: ${envVar.value} → https://${projectName || 'your-app'}.aitoyz.in`
+                            : envVar.value || envVar.description
+                        }
+                        value={envVars[envVar.key] || ''}
+                        onChange={(e) => setEnvVars({ ...envVars, [envVar.key]: e.target.value })}
+                        disabled={isDeploying}
+                      />
+                      {envVar.description && (
+                        <p className="text-xs text-muted-foreground">
+                          {envVar.description}
+                          {isPlaceholder && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              • Leave empty to use auto-filled value
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
