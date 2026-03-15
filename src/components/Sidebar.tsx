@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Plug,
   FileSearch,
+  BookOpen,
 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ const navItems = [
   { label: 'Deploy', icon: Plus, href: '/dashboard/deploy' },
   { label: 'Projects', icon: Layers, href: '/dashboard/projects' },
   { label: 'Code Reviewer', icon: FileSearch, href: '/dashboard/reviewer' },
+  { label: 'CLI Docs', icon: BookOpen, href: '/dashboard/cli' },
   { label: 'Marketplace', icon: Package, href: '/apps' },
   { label: 'Terminal', icon: Terminal, href: '/bash' },
 ];

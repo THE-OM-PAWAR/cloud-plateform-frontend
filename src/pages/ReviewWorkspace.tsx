@@ -20,7 +20,7 @@ export const ReviewWorkspace = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [review, setReview] = useState<Review | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [fixing, setFixing] = useState(false);
   const [deploying, setDeploying] = useState(false);
@@ -80,7 +80,7 @@ export const ReviewWorkspace = () => {
         });
 
         // Start review
-        const response = await reviewerApi.startReview(token, owner, repo, newSocket.id);
+        await reviewerApi.startReview(token, owner, repo, newSocket.id);
         toast.success('Review started!');
 
         // Poll for review completion

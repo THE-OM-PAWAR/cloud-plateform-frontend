@@ -11,3 +11,4 @@ export { default as MyDeployments } from './MyDeployments';
 export { default as CodeReviewer } from './CodeReviewer';
 export { default as ReviewWorkspace } from './ReviewWorkspace';
 export { default as CliAuth } from './CliAuth';
+export { default as CliDocumentation } from './CliDocumentation';

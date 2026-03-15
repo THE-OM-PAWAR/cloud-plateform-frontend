@@ -21,6 +21,7 @@ import Projects from "@/pages/Projects";
 import CodeReviewer from "@/pages/CodeReviewer";
 import ReviewWorkspace from "@/pages/ReviewWorkspace";
 import CliAuth from "@/pages/CliAuth";
+import CliDocumentation from "@/pages/CliDocumentation";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -84,6 +85,14 @@ export function App() {
               element={
                 <ProtectedRoute>
                   <Integrations />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/cli" 
+              element={
+                <ProtectedRoute>
+                  <CliDocumentation />
                 </ProtectedRoute>
               } 
             />
