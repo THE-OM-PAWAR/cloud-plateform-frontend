@@ -61,7 +61,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
             C
           </div>
           {!collapsed && (
-            <span className="font-semibold text-sm truncate">CloudDeploy</span>
+            <span className="font-semibold text-sm truncate">CloudOne</span>
           )}
         </div>
 

@@ -16,7 +16,7 @@ export const DashboardHeader = () => {
           <div className="flex items-center gap-8">
             <Link to="/dashboard" className="flex items-center gap-2">
               <Rocket className="h-5 w-5" />
-              <span className="font-semibold">CloudDeploy</span>
+              <span className="font-semibold">CloudOne</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6 text-sm">
               <Link 

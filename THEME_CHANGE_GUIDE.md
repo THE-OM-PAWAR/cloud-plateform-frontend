@@ -21,7 +21,7 @@ The default theme has been changed from **dark** to **light** across all section
 
 ### New Users
 - Will automatically see light theme on first visit
-- Theme preference is saved in localStorage as `clouddeploy-theme`
+- Theme preference is saved in localStorage as `CloudOne-theme`
 
 ### Existing Users
 Users who already visited the site may have dark theme stored in localStorage.
@@ -29,7 +29,7 @@ Users who already visited the site may have dark theme stored in localStorage.
 #### To Clear Stored Theme (For Testing)
 Open browser console and run:
 ```javascript
-localStorage.removeItem('clouddeploy-theme');
+localStorage.removeItem('CloudOne-theme');
 location.reload();
 ```
 
@@ -122,7 +122,7 @@ To revert to dark theme as default:
 
 1. **`src/App.tsx`**
 ```typescript
-<ThemeProvider defaultTheme="dark" storageKey="clouddeploy-theme">
+<ThemeProvider defaultTheme="dark" storageKey="CloudOne-theme">
 ```
 
 2. **`src/components/theme-provider.tsx`**

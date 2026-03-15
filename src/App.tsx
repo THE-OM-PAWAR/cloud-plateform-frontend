@@ -20,6 +20,7 @@ import DeployFromGitHub from "@/pages/DeployFromGitHub";
 import Projects from "@/pages/Projects";
 import CodeReviewer from "@/pages/CodeReviewer";
 import ReviewWorkspace from "@/pages/ReviewWorkspace";
+import CliAuth from "@/pages/CliAuth";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -30,13 +31,14 @@ if (!CLERK_PUBLISHABLE_KEY) {
 
 export function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="clouddeploy-theme">
+    <ThemeProvider defaultTheme="light" storageKey="CloudOne-theme">
       <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
         <Router>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/sign-in/*" element={<SignInPage />} />
             <Route path="/sign-up/*" element={<SignUpPage />} />
+            <Route path="/cli-auth" element={<CliAuth />} />
             <Route 
               path="/dashboard" 
               element={

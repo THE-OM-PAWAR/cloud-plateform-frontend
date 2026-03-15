@@ -9,10 +9,10 @@ The application now defaults to **light theme** across all sections.
 ### 1. App.tsx
 ```typescript
 // Before
-<ThemeProvider defaultTheme="dark" storageKey="clouddeploy-theme">
+<ThemeProvider defaultTheme="dark" storageKey="CloudOne-theme">
 
 // After
-<ThemeProvider defaultTheme="light" storageKey="clouddeploy-theme">
+<ThemeProvider defaultTheme="light" storageKey="CloudOne-theme">
 ```
 
 ### 2. main.tsx
@@ -44,7 +44,7 @@ defaultTheme = "light"
 
 ### Existing Users
 - ⚠️ May still see dark theme if previously set
-- 💡 Can clear localStorage to reset: `localStorage.removeItem('clouddeploy-theme')`
+- 💡 Can clear localStorage to reset: `localStorage.removeItem('CloudOne-theme')`
 - 💡 Or press `D` key to toggle to light theme
 
 ## All Sections Affected
@@ -79,14 +79,14 @@ Users can switch themes anytime:
 ### For Existing Install
 ```javascript
 // Open browser console
-localStorage.removeItem('clouddeploy-theme');
+localStorage.removeItem('CloudOne-theme');
 location.reload();
 // Should now see light theme
 ```
 
 ## Technical Details
 
-- Theme stored in: `localStorage['clouddeploy-theme']`
+- Theme stored in: `localStorage['CloudOne-theme']`
 - CSS classes: `.light` or `.dark` on `<html>` element
 - CSS variables defined in: `src/index.css`
 - Theme provider: `src/components/theme-provider.tsx`
