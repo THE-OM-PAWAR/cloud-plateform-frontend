@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,10 +34,21 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const { getToken } = useAuth();
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [userProjects, setUserProjects] = useState<any[]>([]);
   const [appDeployments, setAppDeployments] = useState<AppDeployment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Handle GitHub OAuth callback
+  useEffect(() => {
+    const githubParam = searchParams.get('github');
+    if (githubParam === 'connected' || githubParam === 'error') {
+      // Redirect to integrations page to show the animation
+      navigate(`/dashboard/integrations?github=${githubParam}`, { replace: true });
+      return;
+    }
+  }, [searchParams, navigate]);
 
   useEffect(() => {
     const loadData = async () => {

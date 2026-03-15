@@ -1,12 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { GitHubConnection } from '@/components/GitHubConnection';
+import { GitHubIntegrationAnimation } from '@/components/GitHubIntegrationAnimation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, Cloud } from 'lucide-react';
 
 export const Integrations = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [animationStatus, setAnimationStatus] = useState<'connecting' | 'success' | 'error'>('connecting');
+
+  useEffect(() => {
+    const githubParam = searchParams.get('github');
+    
+    if (githubParam === 'connected') {
+      setAnimationStatus('success');
+      setShowAnimation(true);
+      // Clear the URL parameter
+      setSearchParams({});
+    } else if (githubParam === 'error') {
+      setAnimationStatus('error');
+      setShowAnimation(true);
+      // Clear the URL parameter
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
+
+  const handleAnimationComplete = () => {
+    setShowAnimation(false);
+  };
+
+  // Show animation overlay when GitHub OAuth returns
+  if (showAnimation) {
+    return <GitHubIntegrationAnimation status={animationStatus} onComplete={handleAnimationComplete} />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">

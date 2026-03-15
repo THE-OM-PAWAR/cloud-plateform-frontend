@@ -58,7 +58,7 @@ function Navbar() {
           <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
             <Cloud className="h-4 w-4 text-background" />
           </div>
-          CloudTerminal
+          CloudOne
         </div>
 
         {/* Desktop nav */}
@@ -265,7 +265,7 @@ function ProductPreview() {
                 <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
                 <div className="h-3 w-3 rounded-full bg-green-500/80" />
               </div>
-              <span className="text-xs text-zinc-500 font-mono">CloudTerminal — prod-server-01</span>
+              <span className="text-xs text-zinc-500 font-mono">CloudOne — prod-server-01</span>
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs text-zinc-500">connected</span>
@@ -393,7 +393,7 @@ function Footer() {
               <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center">
                 <Cloud className="h-3.5 w-3.5 text-background" />
               </div>
-              CloudTerminal
+              CloudOne
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-[200px]">
               Secure browser-based SSH terminal for modern infrastructure teams.
@@ -424,7 +424,7 @@ function Footer() {
         </div>
         <Separator />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-xs text-muted-foreground">
-          <p>© 2025 CloudTerminal. All rights reserved.</p>
+          <p>© 2025 CloudOne. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <a href="#" className="hover:text-foreground transition-colors">Terms</a>
             <a href="#" className="hover:text-foreground transition-colors">Privacy</a>

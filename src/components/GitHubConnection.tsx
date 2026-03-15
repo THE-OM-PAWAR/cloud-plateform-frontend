@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { githubApi, type GitHubStatus } from '@/services/github';
+import { GitHubIntegrationAnimation } from '@/components/GitHubIntegrationAnimation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Github, CheckCircle2, Loader2 } from 'lucide-react';
@@ -11,6 +12,7 @@ export const GitHubConnection = () => {
   const [status, setStatus] = useState<GitHubStatus>({ connected: false, username: null });
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [showConnectingAnimation, setShowConnectingAnimation] = useState(false);
 
   useEffect(() => {
     checkStatus();
@@ -34,15 +36,21 @@ export const GitHubConnection = () => {
   const handleConnect = async () => {
     try {
       setConnecting(true);
+      setShowConnectingAnimation(true);
+      
       const token = await getToken();
       if (!token) return;
       
-      const authUrl = await githubApi.getAuthUrl(token);
-      window.location.href = authUrl;
+      // Small delay to show the animation before redirect
+      setTimeout(async () => {
+        const authUrl = await githubApi.getAuthUrl(token);
+        window.location.href = authUrl;
+      }, 1000);
     } catch (error) {
       console.error('Error connecting GitHub:', error);
       toast.error('Failed to initiate GitHub connection');
       setConnecting(false);
+      setShowConnectingAnimation(false);
     }
   };
 
@@ -59,6 +67,18 @@ export const GitHubConnection = () => {
       toast.error('Failed to disconnect GitHub account');
     }
   };
+
+  // Show connecting animation when user clicks connect
+  if (showConnectingAnimation) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <GitHubIntegrationAnimation 
+          status="connecting" 
+          onComplete={() => setShowConnectingAnimation(false)} 
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
